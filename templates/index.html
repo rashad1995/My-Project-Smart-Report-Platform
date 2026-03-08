@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Report Pro | النسخة الاحترافية</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #4f46e5; --accent: #14b8a6; --bg: #f3f4f6; 
+            --text: #111827; --white: #ffffff; --sidebar-w: 300px;
+            --shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+        .dark-mode { --bg: #111827; --text: #f9fafb; --white: #1f2937; }
+
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Cairo', sans-serif; margin: 0; 
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text); transition: 0.3s; overflow-x: hidden; min-height: 100vh;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .sidebar {
+            position: fixed; top: 0; right: -350px; width: var(--sidebar-w); height: 100vh;
+            background: var(--white); box-shadow: var(--shadow-lg);
+            z-index: 5000; padding: 20px; transition: 0.4s ease;
+        }
+        .sidebar.active { right: 0; }
+
+        .float-btn {
+            position: fixed; z-index: 6000; border: none; cursor: pointer;
+            box-shadow: var(--shadow-lg); transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; color: white;
+        }
+        #menuBtn { top: 20px; left: 20px; width: 50px; height: 50px; border-radius: 12px; background: var(--primary); display: none; }
+        #chatToggle { bottom: 20px; left: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent); font-size: 24px; }
+
+        .paper {
+            background: white; width: 210mm; min-height: 297mm; margin: 40px auto;
+            padding: 20mm; box-shadow: var(--shadow-lg); border-radius: 8px;
+            color: #1f2937; outline: none; transition: 0.3s; position: relative; z-index: 10;
+        }
+        .paper[contenteditable="true"] { border: 2px dashed var(--accent); }
+
+        /* تنسيق الجداول المولدّة */
+        .styled-table, table {
+            width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; text-align: center;
+        }
+        .styled-table th, table th { background-color: var(--primary); color: white; padding: 12px; }
+        .styled-table td, table td { padding: 10px; border: 1px solid #ddd; }
+        .styled-table tr:nth-child(even), table tr:nth-child(even) { background-color: #f8fafc; }
+
+        .section-h { 
+            border-right: 6px solid var(--primary); 
+            padding: 10px 15px; margin: 25px 0 15px; font-weight: 700; color: var(--primary);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .chat-window {
+            position: fixed; bottom: 90px; left: 20px; width: 350px; height: 450px;
+            background: var(--white); border-radius: 20px; box-shadow: var(--shadow-lg);
+            z-index: 6000; display: none; flex-direction: column; overflow: hidden;
+        }
+
+        .hero { height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; z-index: 5; }
+        
+        .btn { padding: 12px 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; margin-top: 8px; }
+        .btn-p { background: var(--primary); color: white; }
+        
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-box { background: white; border: 1px solid #e2e8f0; height: 250px; padding: 10px; border-radius: 12px; }
+
+        .lang-select { padding: 10px; border-radius: 8px; border: 2px solid #e2e8f0; width: 100%; margin-bottom: 15px; font-family: 'Cairo'; }
+
+        @media print {
+            body { background: white !important; }
+            .sidebar, .float-btn, .chat-window, .hero { display: none !important; }
+            .paper { margin: 0 !important; border: none !important; width: 100% !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="float-btn" id="menuBtn" onclick="toggleSidebar()">🛠️</button>
+    <button class="float-btn" id="chatToggle" onclick="toggleChat()">💬</button>
+
+    <div class="sidebar" id="sidebar">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+            <button onclick="toggleDarkMode()" style="background:none; border:none; font-size:24px; cursor:pointer;">🌓</button>
+            <h3 style="margin:0; color:var(--primary);">الإعدادات</h3>
+            <button onclick="toggleSidebar()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+        </div>
+
+        <div style="margin-bottom: 20px; text-align: center;">
+            <button class="btn" style="background:#f1f5f9; font-size: 24px; width: 60px; height: 60px; border-radius: 50%; margin: 0 auto;" onclick="toggleEditMode()" title="تفعيل/تعطيل تعديل التقرير">✏️</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button class="btn btn-p" onclick="savePDF()" style="background:var(--accent);">📄 تصدير PDF</button>
+            <button class="btn btn-p" onclick="location.reload()" style="background:#64748b;">🔄 تحليل جديد</button>
+        </div>
+    </div>
+
+    <div class="chat-window" id="chatWin">
+        <div style="background:var(--primary); color:white; padding:15px; display:flex; justify-content:space-between;">
+            <span>💬 مساعد التقرير الذكي</span>
+            <button onclick="toggleChat()" style="background:none; border:none; color:white; cursor:pointer;">✕</button>
+        </div>
+        <div id="chatBody" style="flex:1; padding:15px; overflow-y:auto; background:#f9fafb;"></div>
+        <div style="padding:10px; display:flex; gap:5px; border-top:1px solid #e2e8f0;">
+            <input type="text" id="chatIn" placeholder="اسألني عن البيانات..." style="flex:1; padding:8px; border-radius:8px; border:1px solid #ddd;" onkeypress="if(event.key==='Enter') ask()">
+            <button onclick="ask()" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:8px;">إرسال</button>
+        </div>
+    </div>
+
+    <div class="main-wrapper" id="mainWrapper">
+        <section class="hero" id="hero">
+            <h1 style="color: white; text-shadow: 2px 2px 10px rgba(0,0,0,0.2); font-size: 3rem;"><span style="color:var(--primary);">Smart</span>Report</h1>
+            <p style="color: white; font-weight: bold;">حلل ملفاتك بضغطة زر</p>
+            
+            <div style="background:rgba(255,255,255,0.9); backdrop-filter: blur(10px); padding:30px; border-radius:20px; box-shadow:var(--shadow-lg); width: 90%; max-width: 500px;">
+                <label style="display:block; margin-bottom:8px; font-weight:bold;">لغة التقرير المطلوبة:</label>
+                <select id="langSelect" class="lang-select">
+                    <option value="Arabic">العربية (Arabic)</option>
+                    <option value="English">الإنجليزية (English)</option>
+                </select>
+
+                <input type="file" id="fileInput" style="width:100%; margin-bottom:15px; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                <button class="btn btn-p" onclick="startAnalysis()" id="startBtn">🚀 بدء التحليل</button>
+            </div>
+        </section>
+
+        <div id="reportArea" style="display:none;">
+            <div class="paper" id="paper" contenteditable="false" spellcheck="false"></div>
+        </div>
+    </div>
+
+    <script>
+        let isDarkMode = false;
+        let editEnabled = false;
+
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            if(isDarkMode) {
+                document.body.style.background = "#111827";
+                document.body.style.animation = "none";
+            } else {
+                document.body.style.background = "linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)";
+                document.body.style.backgroundSize = "400% 400%";
+                document.body.style.animation = "gradientBG 15s ease infinite";
+            }
+        }
+
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('active');
+        }
+
+        function toggleEditMode() {
+            editEnabled = !editEnabled;
+            const p = document.getElementById('paper');
+            p.contentEditable = editEnabled;
+            const btn = document.querySelector('.sidebar .btn[title*="تعديل"]');
+            btn.style.background = editEnabled ? "var(--accent)" : "#f1f5f9";
+            btn.style.color = editEnabled ? "white" : "black";
+        }
+
+        function toggleChat() { 
+            const win = document.getElementById('chatWin');
+            win.style.display = (win.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        async function startAnalysis() {
+            const file = document.getElementById('fileInput').files[0];
+            const lang = document.getElementById('langSelect').value;
+            if(!file) return alert("اختر ملفاً أولاً");
+
+            const btn = document.getElementById('startBtn');
+            btn.disabled = true; btn.innerText = "جاري التحليل...";
+
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('lang', lang);
+
+            try {
+                const res = await fetch('/analyze', { method: 'POST', body: fd });
+                const d = await res.json();
+                renderReport(d, lang);
+                document.getElementById('hero').style.display = 'none';
+                document.getElementById('reportArea').style.display = 'block';
+                document.getElementById('menuBtn').style.display = 'flex';
+            } catch(e) {
+                alert("حدث خطأ أثناء التحليل");
+            } finally {
+                btn.disabled = false; btn.innerText = "🚀 بدء التحليل";
+            }
+        }
+
+        function renderReport(d, lang) {
+            const p = document.getElementById('paper');
+            const r = d.report;
+            const isN = d.type === 'numeric';
+            
+            p.style.direction = (lang === 'Arabic') ? 'rtl' : 'ltr';
+            p.style.textAlign = (lang === 'Arabic') ? 'right' : 'left';
+
+            let html = `
+                <div style="text-align:center; margin-bottom:40px;">
+                    <h1 style="color:var(--primary); font-size: 28px;">${r.title}</h1>
+                    <p style="color:gray;">تاريخ التقرير: ${new Date().toLocaleDateString()}</p>
+                </div>
+                <div class="section-h">${lang === 'Arabic' ? 'المقدمة' : 'Introduction'}</div>
+                <div style="line-height:1.8;">${isN ? r.introduction : r.content_overview}</div>
+                
+                <div class="section-h">${lang === 'Arabic' ? 'ملخص البيانات' : 'Executive Summary'}</div>
+                <div style="line-height:1.8;">${isN ? r.data_nature : r.executive_summary_15_lines}</div>
+            `;
+
+            if(isN) {
+                html += `
+                    <div class="section-h">${lang === 'Arabic' ? 'التحليل الإحصائي الرقمي' : 'Statistical Analysis'}</div>
+                    <div class="table-container">${r.stats_table_html}</div>
+                    <div class="section-h">${lang === 'Arabic' ? 'الرسوم البيانية التوضيحية' : 'Data Visualizations'}</div>
+                    <div class="charts-grid">
+                        <div class="chart-box"><canvas id="c1"></canvas></div>
+                        <div class="chart-box"><canvas id="c2"></canvas></div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="section-h">${lang === 'Arabic' ? 'التوصيات الإستراتيجية' : 'Recommendations'}</div>
+                <ul style="line-height:1.8;">${(isN?r.strategic_recommendations:r.recommendations).map(li=>`<li>${li}</li>`).join('')}</ul>
+            `;
+
+            p.innerHTML = html;
+            if(isN) setTimeout(() => initCharts(d.charts), 500);
+        }
+
+        function initCharts(data) {
+            const cfg = { responsive: true, maintainAspectRatio: false };
+            new Chart(document.getElementById('c1'), { type:'bar', data: { labels: data.labels, datasets:[{label:'متوسط القيم', data:data.values, backgroundColor:'#4f46e5'}]}, options: cfg });
+            new Chart(document.getElementById('c2'), { type:'line', data: { labels: data.labels, datasets:[{label:'الاتجاه العام', data:data.values, borderColor:'#14b8a6', tension:0.4, fill:true, backgroundColor:'rgba(20, 184, 166, 0.1)'}]}, options: cfg });
+        }
+
+        function savePDF() { window.print(); }
+
+        async function ask() {
+            const inp = document.getElementById('chatIn');
+            const body = document.getElementById('chatBody');
+            if(!inp.value.trim()) return;
+
+            const q = inp.value;
+            body.innerHTML += `<div style="text-align:right; margin:10px; background:var(--primary); color:white; padding:8px; border-radius:12px 12px 0 12px;"><b>أنت:</b> ${q}</div>`;
+            inp.value = '';
+
+            try {
+                const res = await fetch('/chat', { 
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({query:q}) 
+                });
+                const d = await res.json();
+                body.innerHTML += `<div style="text-align:left; margin:10px; background:#e2e8f0; padding:8px; border-radius:12px 12px 12px 0; color:#1e293b;"><b>الذكاء الاصطناعي:</b> ${d.answer}</div>`;
+                body.scrollTop = body.scrollHeight;
+            } catch(e) {
+                body.innerHTML += `<div style="color:red; font-size:12px; text-align:center;">خطأ في الاتصال..</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
